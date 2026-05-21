@@ -18,23 +18,23 @@ ${topicDescription ? `설명: ${topicDescription}` : ''}
 각 반 의견:
 ${subsText}
 
-위 의견을 회의록에 넣기 좋게 정리해주세요.
+위 의견을 요약 정리 해주세요.
 
 조건:
-- 비슷한 의견은 묶어서 정리
-- 카테고리는 2~4개 정도로 구성
-- 각 카테고리에는 핵심 의견을 2~4개 작성
+- 비슷한 의견 묶어서 한 문장으로 해주세요.
+- 카테고리는 1~4개 정도로 구성
+- 각 카테고리에는 핵심 의견을 1~4개 작성
 - 원문에 없는 내용은 추가하지 않기
 - 너무 짧게 줄이지 말고, 회의 결과가 드러나게 작성
 
 형식:
 [카테고리명]
-- 의견
-- 의견
+- 핵심 의견
+- 핵심 의견
 
 [카테고리명]
-- 의견
-- 의견
+- 핵심 의견
+- 핵심 의견
 `;
 }
 
@@ -59,14 +59,7 @@ export default async function handler(req, res) {
   try {
     if (aiProvider === 'gemini') {
       if (!geminiApiKey) return res.status(400).json({ error: '설정에서 Gemini API 키를 먼저 입력해주세요.' })
-      const genAI = new GoogleGenerativeAI(geminiApiKey)
-      const model = genAI.getGenerativeModel({
-  model: 'gemini-3.5-flash',
-  generationConfig: {
-    maxOutputTokens: 2048,
-    temperature: 0.3,
-  },
-})
+      const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' })
 const result = await model.generateContent(prompt)
       summaryText = result.response.text()
     } else {
