@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       const model = genAI.getGenerativeModel({
   model: 'gemini-3.5-flash',
   generationConfig: {
-    maxOutputTokens: 1024,
+    maxOutputTokens: 2048,
     temperature: 0.3,
   },
 })
@@ -71,7 +71,7 @@ const result = await model.generateContent(prompt)
       const client = new Anthropic({ apiKey: claudeApiKey })
       const message = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [{ role: 'user', content: prompt }]
       })
       summaryText = message.content[0].text
