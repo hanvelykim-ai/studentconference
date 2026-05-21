@@ -9,28 +9,30 @@ function buildPrompt(topicTitle, topicDescription, submissions) {
     .map(s => `[${s.grade}학년 ${s.class}반]\n${s.content}`)
     .join('\n\n---\n\n')
 
-  return `다음은 학생자치회 회의 안건 "${topicTitle}"에 대한 각 반 회의 결과입니다.${topicDescription ? `\n안건 설명: ${topicDescription}` : ''}
+  return `다음은 학생자치회 회의 안건 "${topicTitle}"에 대한 각 반 회의 결과입니다.
+${topicDescription ? `안건 설명: ${topicDescription}` : ''}
 
 총 ${submissions.length}개 반의 의견:
-
 ${subsText}
 
-위 의견들을 아래 규칙에 따라 정리해주세요. 마크다운 기호(**,#,* 등)는 사용하지 마세요.
+위 의견들을 아래 규칙에 따라 아주 간단히 정리해주세요.
 
 [정리 규칙]
-1. 내용이 같거나 거의 유사한 의견은 하나로 합쳐주세요.
-2. 비슷한 성격의 의견들을 묶어 카테고리 이름을 붙여주세요. 카테고리는 내용에 따라 자유롭게 정하되, 3~6개가 적당합니다.
-3. 각 카테고리 안에서 중복을 제거하고 의견을 • 목록으로 나열해주세요.
-4. 출력 형식은 아래와 같이 해주세요:
+1. 마크다운 기호(**,#,* 등)는 사용하지 마세요.
+2. 중복되거나 비슷한 의견은 반드시 하나로 합치세요.
+3. 카테고리는 최대 3개까지만 만드세요.
+4. 각 카테고리에는 핵심 의견만 최대 3개까지만 적으세요.
+5. 한 의견은 20자 이내의 짧은 문장으로 쓰세요.
+6. 세부 설명, 배경 설명, 부연 설명은 쓰지 마세요.
 
+[출력 형식]
 ◆ [카테고리 이름]
 • 의견
 • 의견
 
 ◆ [카테고리 이름]
 • 의견
-
-카테고리가 1개뿐인 경우도 위 형식을 그대로 사용하세요.`
+• 의견`;
 }
 
 export default async function handler(req, res) {
@@ -55,15 +57,21 @@ export default async function handler(req, res) {
     if (aiProvider === 'gemini') {
       if (!geminiApiKey) return res.status(400).json({ error: '설정에서 Gemini API 키를 먼저 입력해주세요.' })
       const genAI = new GoogleGenerativeAI(geminiApiKey)
-      const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' })
-      const result = await model.generateContent(prompt)
+      const model = genAI.getGenerativeModel({
+  model: 'gemini-3.5-flash',
+  generationConfig: {
+    maxOutputTokens: 600,
+    temperature: 0.3,
+  },
+})
+const result = await model.generateContent(prompt)
       summaryText = result.response.text()
     } else {
       if (!claudeApiKey) return res.status(400).json({ error: '설정에서 Claude API 키를 먼저 입력해주세요.' })
       const client = new Anthropic({ apiKey: claudeApiKey })
       const message = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2048,
+        max_tokens: 600,
         messages: [{ role: 'user', content: prompt }]
       })
       summaryText = message.content[0].text
