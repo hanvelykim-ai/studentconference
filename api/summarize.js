@@ -9,30 +9,30 @@ function buildPrompt(topicTitle, topicDescription, submissions) {
     .map(s => `[${s.grade}학년 ${s.class}반]\n${s.content}`)
     .join('\n\n---\n\n')
 
-  return `다음은 학생자치회 회의 안건 "${topicTitle}"에 대한 각 반 회의 결과입니다.
+ return `다음은 학생자치회 회의 안건 "${topicTitle}"에 대한 각 반 회의 결과입니다.
 ${topicDescription ? `안건 설명: ${topicDescription}` : ''}
 
 총 ${submissions.length}개 반의 의견:
 ${subsText}
 
-위 의견들을 아래 규칙에 따라 아주 간단히 정리해주세요.
+아래 규칙을 반드시 지켜 한국어로만 정리하세요.
 
 [정리 규칙]
-1. 마크다운 기호(**,#,* 등)는 사용하지 마세요.
-2. 중복되거나 비슷한 의견은 반드시 하나로 합치세요.
-3. 카테고리는 최대 3개까지만 만드세요.
-4. 각 카테고리에는 핵심 의견만 최대 3개까지만 적으세요.
-5. 한 의견은 20자 이내의 짧은 문장으로 쓰세요.
-6. 세부 설명, 배경 설명, 부연 설명은 쓰지 마세요.
+1. 반드시 한국어로만 작성하세요. 영어를 절대 쓰지 마세요.
+2. 학생 의견을 번역하거나 새로운 표현으로 과하게 바꾸지 마세요.
+3. 중복 의견은 하나로 합치세요.
+4. 카테고리는 최대 3개만 만드세요.
+5. 각 카테고리의 의견은 최대 3개만 쓰세요.
+6. 한 의견은 짧은 문장으로 쓰세요.
+7. 마크다운 기호(**,#,* 등)는 사용하지 마세요.
+8. 원문에 없는 내용을 새로 만들지 마세요.
 
 [출력 형식]
-◆ [카테고리 이름]
-• 의견
-• 의견
+◆ 시설 이용
+• 층별 안내 지도를 만들기
 
-◆ [카테고리 이름]
-• 의견
-• 의견`;
+◆ 규칙 안내
+• 함께 사용할 수 있는 방법 정하기`
 }
 
 export default async function handler(req, res) {
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       const model = genAI.getGenerativeModel({
   model: 'gemini-3.5-flash',
   generationConfig: {
-    maxOutputTokens: 600,
+    maxOutputTokens: 1024,
     temperature: 0.3,
   },
 })
@@ -71,7 +71,7 @@ const result = await model.generateContent(prompt)
       const client = new Anthropic({ apiKey: claudeApiKey })
       const message = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 600,
+        max_tokens: 1024,
         messages: [{ role: 'user', content: prompt }]
       })
       summaryText = message.content[0].text
