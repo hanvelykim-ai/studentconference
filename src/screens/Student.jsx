@@ -38,10 +38,31 @@ export default function Student({ user, onLogout }) {
   const [mySubmissions, setMySubs] = useState([])
   const [selected, setSelected]    = useState(null)
   const [summary, setSummary]      = useState(null)
-  const [content, setContent]      = useState('')
+  const [items, setItems]          = useState([''])   // 각 줄 = 의견 하나
   const [loading, setLoading]      = useState(true)
   const [saving, setSaving]        = useState(false)
   const [saved, setSaved]          = useState(false)
+  const [categoryWarning, setCategoryWarning] = useState('')
+  const inputRefs = []
+
+  const CATEGORIES = [
+    { id: '협의사항', label: '협의사항', emoji: '🤝', desc: '학생들이 함께 지킬 내용' },
+    { id: '건의사항', label: '건의사항', emoji: '📣', desc: '학교에서 해결해줄 내용' },
+    { id: '이달의안건', label: '이 달의 안건', emoji: '📅', desc: '이번 달 주요 안건' }
+  ]
+
+  // 건의/협의 키워드 경고 (학생 측)
+  function checkMismatch(itemList, category) {
+    if (!category) return ''
+    const text = itemList.join(' ').toLowerCase()
+    const 건의kw = ['해주세요', '해달라', '해줬으면', '요청', '설치해', '지원해', '제공해', '부탁', '개선해', '고쳐', '바꿔']
+    const 협의kw = ['우리가', '함께', '지키자', '약속', '규칙', '정하자', '스스로']
+    if (category === '협의사항' && 건의kw.some(k => text.includes(k)))
+      return '⚠️ 이 안건은 협의사항이에요. 학생들이 스스로 지킬 내용을 적어주세요.'
+    if (category === '건의사항' && 협의kw.some(k => text.includes(k)))
+      return '⚠️ 이 안건은 건의사항이에요. 학교에 요청할 내용을 적어주세요.'
+    return ''
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -71,8 +92,15 @@ export default function Student({ user, onLogout }) {
     setSelected(topic)
     setSummary(null)
     setSaved(false)
+    setCategoryWarning('')
     const ex = getSub(topic.id)
-    setContent(ex ? ex.content : '')
+    // 기존 제출 내용이 있으면 줄 단위로 분리해서 items로
+    if (ex) {
+      const lines = ex.content.split('\n').filter(l => l.trim())
+      setItems(lines.length > 0 ? lines : [''])
+    } else {
+      setItems([''])
+    }
 
     if (topic.status === 'completed') {
       const r = await fetch(`/api/summaries/${topic.id}`)
@@ -80,10 +108,49 @@ export default function Student({ user, onLogout }) {
     }
   }
 
+  function handleItemChange(idx, val) {
+    const next = [...items]
+    next[idx] = val
+    setItems(next)
+    setCategoryWarning(checkMismatch(next, selected?.category))
+  }
+
+  function handleItemKeyDown(idx, e) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const next = [...items]
+      next.splice(idx + 1, 0, '')
+      setItems(next)
+      // 다음 줄 input에 포커스 (setTimeout으로 렌더 후)
+      setTimeout(() => {
+        const inputs = document.querySelectorAll('.opinion-input')
+        if (inputs[idx + 1]) inputs[idx + 1].focus()
+      }, 0)
+    }
+    if (e.key === 'Backspace' && items[idx] === '' && items.length > 1) {
+      e.preventDefault()
+      const next = items.filter((_, i) => i !== idx)
+      setItems(next)
+      setTimeout(() => {
+        const inputs = document.querySelectorAll('.opinion-input')
+        if (inputs[idx - 1]) inputs[idx - 1].focus()
+      }, 0)
+    }
+  }
+
+  function removeItem(idx) {
+    if (items.length === 1) { setItems(['']); return }
+    const next = items.filter((_, i) => i !== idx)
+    setItems(next)
+    setCategoryWarning(checkMismatch(next, selected?.category))
+  }
+
   async function submit() {
-    if (!content.trim() || saving) return
+    const filled = items.filter(i => i.trim())
+    if (filled.length === 0 || saving) return
     setSaving(true)
     try {
+      const content = filled.join('\n')
       await fetch('/api/submissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,7 +158,7 @@ export default function Student({ user, onLogout }) {
           topicId: selected.id,
           grade: user.grade,
           class: user.class,
-          content: content.trim()
+          content
         })
       })
       await load()
@@ -108,22 +175,36 @@ export default function Student({ user, onLogout }) {
   if (selected) {
     const existingSub  = getSub(selected.id)
     const isCompleted  = selected.status === 'completed'
+    const filledItems  = items.filter(i => i.trim())
+    const cat = CATEGORIES.find(c => c.id === selected.category)
 
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <Header user={user} onBack={() => { setSelected(null); setSaved(false); setSummary(null) }} onLogout={onLogout} />
+        <Header user={user} onBack={() => { setSelected(null); setSaved(false); setSummary(null); setCategoryWarning('') }} onLogout={onLogout} />
         <div style={{ maxWidth: '680px', margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-          {/* Topic title */}
+          {/* Topic title + category */}
           <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px', flexWrap: 'wrap' }}>
+            {cat && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                fontSize: '13px', fontWeight: 700,
+                color: '#3b6fd4', background: '#f0f4ff',
+                borderRadius: '9999px', padding: '4px 12px',
+                marginBottom: '10px'
+              }}>
+                {cat.emoji} {cat.label}
+                <span style={{ fontWeight: 400, color: '#888', fontSize: '12px' }}>· {cat.desc}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <h2 style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em' }}>
                 {selected.title}
               </h2>
               {isCompleted && <span className="badge badge-green">요약 완료</span>}
             </div>
             {selected.description && (
-              <p style={{ color: '#666', fontSize: '15px', lineHeight: 1.6 }}>
+              <p style={{ color: '#666', fontSize: '15px', lineHeight: 1.6, marginTop: '8px' }}>
                 {selected.description}
               </p>
             )}
@@ -157,10 +238,13 @@ export default function Student({ user, onLogout }) {
             </div>
           )}
 
-          {/* 우리 반 제출 내용 */}
+          {/* 우리 반 의견 입력 */}
           <div className="card">
-            <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '14px' }}>
+            <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>
               {user.grade}학년 {user.class}반 회의 결과
+            </p>
+            <p style={{ fontSize: '13px', color: '#999', marginBottom: '16px' }}>
+              의견을 한 줄씩 입력하고 <kbd style={{ background: '#f0f0f0', borderRadius: '4px', padding: '1px 5px', fontSize: '12px', fontFamily: 'monospace' }}>Enter</kbd>를 누르면 다음 칸이 생겨요
             </p>
 
             {saved && (
@@ -181,24 +265,72 @@ export default function Student({ user, onLogout }) {
               </div>
             )}
 
-            <textarea
-              className="textarea"
-              value={content}
-              onChange={e => setContent(e.target.value)}
-              disabled={isCompleted}
-              placeholder={`우리 반 회의에서 나온 의견을 적어주세요.\n여러 의견은 번호를 매겨 정리하면 좋습니다.\n예)\n1. 체육대회 종목에 계주를 넣으면 좋겠다\n2. 응원 도구를 각 반이 직접 만들었으면 한다`}
-              style={{ marginBottom: isCompleted ? 0 : '16px', minHeight: '160px', opacity: isCompleted ? 0.65 : 1 }}
-            />
+            {/* 경고 */}
+            {categoryWarning && (
+              <div className="alert alert-warning" style={{ marginBottom: '14px' }}>
+                {categoryWarning}
+              </div>
+            )}
 
-            {!isCompleted && (
-              <button
-                className="btn-primary"
-                onClick={submit}
-                disabled={!content.trim() || saving}
-                style={{ width: '100%', fontSize: '16px', padding: '18px' }}
-              >
-                {saving ? <><span className="spinner" /> 제출 중...</> : existingSub ? '수정하여 다시 제출' : '제출하기'}
-              </button>
+            {isCompleted ? (
+              /* 완료된 경우: 읽기 전용으로 목록 표시 */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', opacity: 0.65 }}>
+                {items.filter(i => i.trim()).map((item, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '10px',
+                    padding: '12px 14px', background: 'var(--color-canvas-oat)',
+                    borderRadius: '14px'
+                  }}>
+                    <span style={{ color: '#bbb', fontSize: '13px', fontWeight: 700, minWidth: '20px', paddingTop: '1px' }}>{idx + 1}</span>
+                    <span style={{ fontSize: '15px', lineHeight: 1.6, flex: 1 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* 입력 가능: 리스트 형태 입력 */
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                  {items.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: '#bbb', fontSize: '13px', fontWeight: 700, minWidth: '20px', textAlign: 'right' }}>
+                        {idx + 1}
+                      </span>
+                      <input
+                        className="input opinion-input"
+                        value={item}
+                        onChange={e => handleItemChange(idx, e.target.value)}
+                        onKeyDown={e => handleItemKeyDown(idx, e)}
+                        placeholder={idx === 0 ? '의견을 입력하고 Enter를 누르세요' : '의견을 입력하세요'}
+                        style={{ flex: 1, padding: '12px 16px' }}
+                        autoFocus={idx === items.length - 1 && idx > 0}
+                      />
+                      {items.length > 1 && (
+                        <button
+                          onClick={() => removeItem(idx)}
+                          style={{
+                            background: 'none', border: 'none',
+                            color: '#ccc', cursor: 'pointer',
+                            fontSize: '18px', padding: '4px 6px',
+                            lineHeight: 1, flexShrink: 0
+                          }}
+                          title="삭제"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  className="btn-primary"
+                  onClick={submit}
+                  disabled={filledItems.length === 0 || saving}
+                  style={{ width: '100%', fontSize: '16px', padding: '18px' }}
+                >
+                  {saving ? <><span className="spinner" /> 제출 중...</> : existingSub ? '수정하여 다시 제출' : '제출하기'}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -241,6 +373,7 @@ export default function Student({ user, onLogout }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {activeTopics.map(topic => {
                     const submitted = !!getSub(topic.id)
+                    const cat = CATEGORIES.find(c => c.id === topic.category)
                     return (
                       <button
                         key={topic.id}
@@ -260,6 +393,15 @@ export default function Student({ user, onLogout }) {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                           <div style={{ flex: 1 }}>
+                            {cat && (
+                              <span style={{
+                                display: 'inline-block', fontSize: '11px', fontWeight: 700,
+                                color: '#3b6fd4', background: '#f0f4ff',
+                                borderRadius: '9999px', padding: '2px 8px', marginBottom: '6px'
+                              }}>
+                                {cat.emoji} {cat.label}
+                              </span>
+                            )}
                             <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: topic.description ? '6px' : 0, letterSpacing: '-0.01em' }}>
                               {topic.title}
                             </h3>
@@ -292,6 +434,7 @@ export default function Student({ user, onLogout }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {doneTopics.map(topic => {
                     const submitted = !!getSub(topic.id)
+                    const cat = CATEGORIES.find(c => c.id === topic.category)
                     return (
                       <button
                         key={topic.id}
@@ -311,6 +454,15 @@ export default function Student({ user, onLogout }) {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                           <div style={{ flex: 1 }}>
+                            {cat && (
+                              <span style={{
+                                display: 'inline-block', fontSize: '11px', fontWeight: 700,
+                                color: '#3b6fd4', background: '#f0f4ff',
+                                borderRadius: '9999px', padding: '2px 8px', marginBottom: '6px'
+                              }}>
+                                {cat.emoji} {cat.label}
+                              </span>
+                            )}
                             <h3 style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em', marginBottom: '6px' }}>
                               {topic.title}
                             </h3>
