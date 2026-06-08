@@ -57,7 +57,67 @@ export default function Teacher({ onLogout }) {
   // Create topic
   const [newTitle, setNewTitle] = useState('')
   const [newDesc, setNewDesc]   = useState('')
+  const [newCategory, setNewCategory] = useState('')
   const [creating, setCreating] = useState(false)
+  const [categoryWarning, setCategoryWarning] = useState('')
+
+  const CATEGORIES = [
+    {
+      id: '협의사항',
+      label: '협의사항',
+      emoji: '🤝',
+      desc: '학생들이 함께 지킬 내용',
+      hint: '예: 청소 구역 재배정, 급식 줄서기 규칙'
+    },
+    {
+      id: '건의사항',
+      label: '건의사항',
+      emoji: '📣',
+      desc: '학교에서 해결해줄 내용',
+      hint: '예: 화장실 비품 보충, 냉난방 요청'
+    },
+    {
+      id: '이달의안건',
+      label: '이 달의 안건',
+      emoji: '📅',
+      desc: '이번 달 주요 안건',
+      hint: '예: 수련회 장소 의견, 학예회 종목 선정'
+    }
+  ]
+
+  function checkCategoryMismatch(title, desc, category) {
+    if (!category || (!title && !desc)) return ''
+    const text = (title + ' ' + desc).toLowerCase()
+
+    // 건의사항 키워드: 요청/요구/해주세요/해달라/설치/지원/제공/부탁
+    const 건의keywords = ['해주세요', '해달라', '해줬으면', '요청', '설치해', '지원해', '제공해', '부탁', '개선해', '고쳐', '바꿔']
+    // 협의사항 키워드: 우리가/함께/지키자/규칙/약속/정하자
+    const 협의keywords = ['우리가', '함께', '지키자', '약속', '규칙', '정하자', '스스로', '자체적']
+
+    const has건의 = 건의keywords.some(k => text.includes(k))
+    const has협의 = 협의keywords.some(k => text.includes(k))
+
+    if (category === '협의사항' && has건의) {
+      return '⚠️ 내용이 건의사항처럼 보여요. 협의사항은 학생들이 스스로 지킬 내용을 담아야 해요. 카테고리를 확인해 주세요.'
+    }
+    if (category === '건의사항' && has협의) {
+      return '⚠️ 내용이 협의사항처럼 보여요. 건의사항은 학교 측에 요청할 내용을 담아야 해요. 카테고리를 확인해 주세요.'
+    }
+    return ''
+  }
+
+  function handleTitleChange(val) {
+    setNewTitle(val)
+    setCategoryWarning(checkCategoryMismatch(val, newDesc, newCategory))
+  }
+  function handleDescChange(val) {
+    setNewDesc(val)
+    setCategoryWarning(checkCategoryMismatch(newTitle, val, newCategory))
+  }
+  function handleCategoryChange(cat) {
+    setNewCategory(cat)
+    setCategoryWarning(checkCategoryMismatch(newTitle, newDesc, cat))
+  }
 
   // Settings
   const [claudeKey, setClaudeKey]   = useState('')
@@ -107,15 +167,15 @@ export default function Teacher({ onLogout }) {
   }
 
   async function createTopic() {
-    if (!newTitle.trim() || creating) return
+    if (!newTitle.trim() || !newCategory || creating) return
     setCreating(true)
     try {
       await fetch('/api/topics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle.trim(), description: newDesc.trim() })
+        body: JSON.stringify({ title: newTitle.trim(), description: newDesc.trim(), category: newCategory })
       })
-      setNewTitle(''); setNewDesc('')
+      setNewTitle(''); setNewDesc(''); setNewCategory(''); setCategoryWarning('')
       await loadData()
       setView('dashboard')
     } finally {
@@ -293,10 +353,56 @@ export default function Teacher({ onLogout }) {
 
   // ── Create topic ─────────────────────────────────────────
   if (view === 'create') {
+    const selectedCat = CATEGORIES.find(c => c.id === newCategory)
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <Header title="새 안건 등록" onBack={() => setView('dashboard')} onLogout={onLogout} />
-        <div style={{ maxWidth: '560px', margin: '0 auto', padding: '24px 16px' }}>
+        <Header title="새 안건 등록" onBack={() => { setView('dashboard'); setCategoryWarning('') }} onLogout={onLogout} />
+        <div style={{ maxWidth: '560px', margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* 카테고리 선택 */}
+          <div className="card">
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
+              안건 종류 <span style={{ color: 'var(--color-icon-ember)' }}>*</span>
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryChange(cat.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '14px',
+                    padding: '16px 18px',
+                    borderRadius: '20px',
+                    border: newCategory === cat.id
+                      ? '2px solid var(--color-action-sky)'
+                      : '1.5px solid var(--color-border-stone)',
+                    background: newCategory === cat.id
+                      ? 'rgba(100,170,255,0.08)'
+                      : 'var(--color-background-paper)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s',
+                    fontFamily: 'var(--font-main)'
+                  }}
+                >
+                  <span style={{ fontSize: '24px', flexShrink: 0 }}>{cat.emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-text-ink)' }}>
+                        {newCategory === cat.id ? '✓ ' : ''}{cat.label}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#888', marginTop: '3px' }}>{cat.desc}</p>
+                    <p style={{ fontSize: '12px', color: '#bbb', marginTop: '2px' }}>{cat.hint}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 제목 + 설명 */}
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>
@@ -304,9 +410,9 @@ export default function Teacher({ onLogout }) {
               </label>
               <input
                 className="input"
-                placeholder="예: 수련회 장소 의견 수렴"
+                placeholder={selectedCat ? selectedCat.hint.split('예: ')[1]?.split(',')[0] || '안건 제목을 입력하세요' : '안건 제목을 입력하세요'}
                 value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
+                onChange={e => handleTitleChange(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && createTopic()}
                 autoFocus
               />
@@ -319,19 +425,27 @@ export default function Teacher({ onLogout }) {
                 className="textarea"
                 placeholder="안건에 대한 추가 설명을 입력해주세요"
                 value={newDesc}
-                onChange={e => setNewDesc(e.target.value)}
-                style={{ minHeight: '100px' }}
+                onChange={e => handleDescChange(e.target.value)}
+                style={{ minHeight: '90px' }}
               />
             </div>
-            <button
-              className="btn-primary"
-              onClick={createTopic}
-              disabled={!newTitle.trim() || creating}
-              style={{ fontSize: '16px', padding: '18px' }}
-            >
-              {creating ? <><span className="spinner" /> 등록 중...</> : '안건 등록하기'}
-            </button>
           </div>
+
+          {/* 경고 */}
+          {categoryWarning && (
+            <div className="alert alert-warning">
+              {categoryWarning}
+            </div>
+          )}
+
+          <button
+            className="btn-primary"
+            onClick={createTopic}
+            disabled={!newTitle.trim() || !newCategory || creating}
+            style={{ fontSize: '16px', padding: '18px' }}
+          >
+            {creating ? <><span className="spinner" /> 등록 중...</> : '안건 등록하기'}
+          </button>
         </div>
       </div>
     )
@@ -573,6 +687,17 @@ export default function Teacher({ onLogout }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', marginBottom: '8px' }}>
+                        {topic.category && (() => {
+                          const cat = CATEGORIES.find(c => c.id === topic.category)
+                          return cat ? (
+                            <span style={{
+                              fontSize: '12px', fontWeight: 700, padding: '3px 10px',
+                              borderRadius: '9999px', background: '#f0f4ff', color: '#3b6fd4'
+                            }}>
+                              {cat.emoji} {cat.label}
+                            </span>
+                          ) : null
+                        })()}
                         <h3 style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em' }}>
                           {topic.title}
                         </h3>
