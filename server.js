@@ -20,12 +20,20 @@ let data = {
   topics: [],
   submissions: [],
   summaries: [],
+  meetings: [],
+  elections: [],
+  students: [],
+  todos: [],
   settings: { teacherPin: '1234', aiProvider: 'claude', claudeApiKey: '', geminiApiKey: '' }
 }
 
 if (fs.existsSync(DATA_FILE)) {
   try {
     data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'))
+    data.meetings  = data.meetings  || []
+    data.elections = data.elections || []
+    data.students  = data.students  || []
+    data.todos     = data.todos     || []
     const s = data.settings || {}
     // 이전 버전 apiKey → claudeApiKey 마이그레이션
     if (!s.claudeApiKey && s.apiKey) s.claudeApiKey = s.apiKey
@@ -50,12 +58,15 @@ app.get('/api/topics', (_req, res) => {
 })
 
 app.post('/api/topics', (req, res) => {
-  const { title, description } = req.body
+  const { title, description, category } = req.body
   if (!title?.trim()) return res.status(400).json({ error: '제목이 필요합니다.' })
+  const validCategories = ['협의사항', '건의사항', '이달의안건']
+  if (!validCategories.includes(category)) return res.status(400).json({ error: '카테고리를 선택해주세요.' })
   const topic = {
     id: uuidv4(),
     title: title.trim(),
     description: description?.trim() || '',
+    category,
     status: 'active',
     createdAt: new Date().toISOString()
   }
@@ -242,6 +253,169 @@ app.put('/api/settings', (req, res) => {
 
 app.post('/api/verify-pin', (req, res) => {
   res.json({ valid: req.body.pin === data.settings.teacherPin })
+})
+
+// ── Meetings (전교 회의 일정) ──────────────────────────────
+app.get('/api/meetings', (_req, res) => {
+  res.json(data.meetings)
+})
+
+app.post('/api/meetings', (req, res) => {
+  const { title, date, time, location } = req.body
+  if (!title?.trim()) return res.status(400).json({ error: '제목이 필요합니다.' })
+  if (!date) return res.status(400).json({ error: '날짜가 필요합니다.' })
+  const meeting = {
+    id: uuidv4(),
+    title: title.trim(),
+    date,
+    time: time || '',
+    location: location?.trim() || '',
+    attendance: [],
+    createdAt: new Date().toISOString()
+  }
+  data.meetings.unshift(meeting)
+  saveData()
+  res.json(meeting)
+})
+
+app.put('/api/meetings/:id', (req, res) => {
+  const idx = data.meetings.findIndex(m => m.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ error: '없는 일정입니다.' })
+
+  if (req.body?.toggleAttendance) {
+    const { grade, class: cls } = req.body.toggleAttendance
+    const att = data.meetings[idx].attendance || []
+    const existing = att.findIndex(a => a.grade === Number(grade) && a.class === Number(cls))
+    if (existing >= 0) att.splice(existing, 1)
+    else att.push({ grade: Number(grade), class: Number(cls), checkedAt: new Date().toISOString() })
+    data.meetings[idx].attendance = att
+    saveData()
+    return res.json(data.meetings[idx])
+  }
+
+  data.meetings[idx] = { ...data.meetings[idx], ...req.body }
+  saveData()
+  res.json(data.meetings[idx])
+})
+
+app.delete('/api/meetings/:id', (req, res) => {
+  data.meetings = data.meetings.filter(m => m.id !== req.params.id)
+  saveData()
+  res.json({ success: true })
+})
+
+// ── Elections (선거 일정) ──────────────────────────────────
+app.get('/api/elections', (_req, res) => {
+  res.json(data.elections)
+})
+
+app.post('/api/elections', (req, res) => {
+  const { title, date, description } = req.body
+  if (!title?.trim()) return res.status(400).json({ error: '제목이 필요합니다.' })
+  if (!date) return res.status(400).json({ error: '날짜가 필요합니다.' })
+  const election = {
+    id: uuidv4(),
+    title: title.trim(),
+    date,
+    description: description?.trim() || '',
+    createdAt: new Date().toISOString()
+  }
+  data.elections.unshift(election)
+  saveData()
+  res.json(election)
+})
+
+app.put('/api/elections/:id', (req, res) => {
+  const idx = data.elections.findIndex(e => e.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ error: '없는 일정입니다.' })
+  data.elections[idx] = { ...data.elections[idx], ...req.body }
+  saveData()
+  res.json(data.elections[idx])
+})
+
+app.delete('/api/elections/:id', (req, res) => {
+  data.elections = data.elections.filter(e => e.id !== req.params.id)
+  saveData()
+  res.json({ success: true })
+})
+
+// ── Students roster (관리자 전용, 직위-이름 매칭) ────────────
+app.get('/api/students', (_req, res) => {
+  res.json(data.students)
+})
+
+app.post('/api/students', (req, res) => {
+  const { slotKey, name } = req.body
+  if (!slotKey) return res.status(400).json({ error: 'slotKey가 필요합니다.' })
+  const idx = data.students.findIndex(s => s.slotKey === slotKey)
+
+  if (!name?.trim()) {
+    if (idx >= 0) { data.students.splice(idx, 1); saveData() }
+    return res.json({ success: true })
+  }
+
+  if (idx >= 0) {
+    data.students[idx].name = name.trim()
+    data.students[idx].updatedAt = new Date().toISOString()
+  } else {
+    data.students.push({ id: uuidv4(), slotKey, name: name.trim(), updatedAt: new Date().toISOString() })
+  }
+  saveData()
+  res.json({ success: true })
+})
+
+// ── Todos (할 일) ──────────────────────────────────────────
+app.get('/api/todos', (req, res) => {
+  const { identity } = req.query
+  let todos = data.todos
+  if (identity) todos = todos.filter(t => (t.assignedTo || []).includes(identity))
+  res.json(todos)
+})
+
+app.post('/api/todos', (req, res) => {
+  const { title, description, dueDate, assignedTo } = req.body
+  if (!title?.trim()) return res.status(400).json({ error: '제목이 필요합니다.' })
+  if (!Array.isArray(assignedTo) || assignedTo.length === 0) {
+    return res.status(400).json({ error: '할 일을 받을 학생을 선택해주세요.' })
+  }
+  const todo = {
+    id: uuidv4(),
+    title: title.trim(),
+    description: description?.trim() || '',
+    dueDate: dueDate || '',
+    assignedTo,
+    completedBy: [],
+    createdAt: new Date().toISOString()
+  }
+  data.todos.unshift(todo)
+  saveData()
+  res.json(todo)
+})
+
+app.put('/api/todos/:id', (req, res) => {
+  const idx = data.todos.findIndex(t => t.id === req.params.id)
+  if (idx === -1) return res.status(404).json({ error: '없는 할 일입니다.' })
+
+  if (req.body?.toggleComplete) {
+    const identity = req.body.toggleComplete
+    const done = data.todos[idx].completedBy || []
+    const i = done.indexOf(identity)
+    if (i >= 0) done.splice(i, 1)
+    else done.push(identity)
+    data.todos[idx].completedBy = done
+    saveData()
+    return res.json(data.todos[idx])
+  }
+
+  data.todos[idx] = { ...data.todos[idx], ...req.body }
+  saveData()
+  res.json(data.todos[idx])
+})
+
+app.delete('/api/todos/:id', (req, res) => {
+  data.todos = data.todos.filter(t => t.id !== req.params.id)
+  saveData()
+  res.json({ success: true })
 })
 
 // ── Static (production) ───────────────────────────────────
