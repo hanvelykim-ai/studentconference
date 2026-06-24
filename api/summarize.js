@@ -10,7 +10,7 @@ import {
   getSettings
 } from './_data.js'
 
-function buildPrompt(topicTitle, topicDescription, submissions) {
+function buildPrompt(topicTitle, topicDescription, submissions, category) {
   const subsText = submissions
     .sort((a, b) => a.grade - b.grade || a.class - b.class)
     .map(
@@ -18,6 +18,10 @@ function buildPrompt(topicTitle, topicDescription, submissions) {
 ${s.content}`
     )
     .join('\n\n---\n\n')
+
+  const schoolCoopRule = category === '이달의안건'
+    ? `\n- 의견 중 학교(행정실, 교직원 등)의 협조나 조치가 필요한 내용은 다른 의견들과 분리해서 [학교 차원 협조 사항]이라는 항목으로 따로 정리하기\n- [학교 차원 협조 사항]에 들어갈 항목이 없으면 이 항목은 출력하지 않기`
+    : ''
 
   return `
 다음은 초등학교 학생자치회 회의 결과입니다.
@@ -31,7 +35,6 @@ ${subsText}
 위 의견들을 회의록 형식으로 자연스럽게 정리해주세요.
 
 정리 기준:
-정리 기준:
 - 한국어로만 작성
 - 같거나 비슷한 의견은 반드시 하나로 합쳐서 한 줄로 정리하기 (중복 나열 금지)
 - 각 카테고리별로 핵심 의견만 최대 5개 이내로 추리기
@@ -40,16 +43,18 @@ ${subsText}
 - 전체 분량은 최대한 간결하게, 핵심만 남기기
 - 영어 사용하지 않기
 - 마크다운 문법(**,# 등) 사용하지 않기
-- 안내 문장 없이 바로 결과부터 작성하기
+- 안내 문장 없이 바로 결과부터 작성하기${schoolCoopRule}
+
 출력 형식:
 
 [카테고리명]
 - 의견
 - 의견
-
-[카테고리명]
+${category === '이달의안건' ? `
+[학교 차원 협조 사항]
 - 의견
 - 의견
+` : ''}
 `
 }
 
@@ -95,6 +100,7 @@ export default async function handler(req, res) {
     topic.title,
     topic.description,
     submissions
+    topic.category
   )
 
   let summaryText = ''
