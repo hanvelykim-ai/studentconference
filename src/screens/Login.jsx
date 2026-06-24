@@ -12,7 +12,7 @@ function PillRow({ options, value, onSelect, render }) {
             flex: '1 1 auto',
             minWidth: '72px',
             padding: '14px 0',
-            borderRadius: '9999px',
+            borderRadius: '10px',
             border: value === opt ? '2px solid var(--color-outline-ebony)' : '2px solid transparent',
             background: value === opt ? 'var(--color-action-sky)' : 'var(--color-canvas-oat)',
             color: 'var(--color-text-ink)',

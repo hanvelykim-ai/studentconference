@@ -36,7 +36,7 @@ function TabBar({ tabs, active, onChange }) {
           onClick={() => onChange(t.id)}
           style={{
             padding: '8px 16px',
-            borderRadius: '9999px',
+            borderRadius: '10px',
             border: 'none',
             background: active === t.id ? 'var(--color-action-sky)' : 'transparent',
             color: 'var(--color-text-ink)',
@@ -368,8 +368,8 @@ function TopicsTab({ user }) {
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
               fontSize: '13px', fontWeight: 700,
-              color: '#3b6fd4', background: '#f0f4ff',
-              borderRadius: '9999px', padding: '4px 12px', marginBottom: '10px'
+              color: 'var(--color-ink-black)', background: 'var(--color-fog-gray)', border: '1px solid var(--color-ink-black)',
+              borderRadius: '10px', padding: '4px 12px', marginBottom: '10px'
             }}>
               {cat.emoji} {cat.label}
               <span style={{ fontWeight: 400, color: '#888', fontSize: '12px' }}>· {cat.desc}</span>
@@ -394,7 +394,7 @@ function TopicsTab({ user }) {
               </div>
             </div>
             {summary ? (
-              <div style={{ background: 'var(--color-canvas-oat)', borderRadius: '20px', padding: '20px 22px' }}>
+              <div style={{ background: 'var(--color-canvas-oat)', borderRadius: '16px', padding: '20px 22px' }}>
                 <p className="summary-text">{summary.summary}</p>
               </div>
             ) : (
@@ -491,13 +491,13 @@ function TopicsTab({ user }) {
                   return (
                     <button key={topic.id} onClick={() => openTopic(topic)} style={{
                       display: 'block', width: '100%', textAlign: 'left',
-                      background: 'var(--color-background-paper)', borderRadius: '24px', padding: '22px 24px',
+                      background: 'var(--color-background-paper)', borderRadius: '16px', padding: '22px 24px',
                       border: submitted ? '2px solid #86efac' : '1.5px solid var(--color-border-stone)', cursor: 'pointer'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                         <div style={{ flex: 1 }}>
                           {cat && (
-                            <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, color: '#3b6fd4', background: '#f0f4ff', borderRadius: '9999px', padding: '2px 8px', marginBottom: '6px' }}>
+                            <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, color: 'var(--color-ink-black)', background: 'var(--color-fog-gray)', border: '1px solid var(--color-ink-black)', borderRadius: '10px', padding: '2px 8px', marginBottom: '6px' }}>
                               {cat.emoji} {cat.label}
                             </span>
                           )}
@@ -527,18 +527,18 @@ function TopicsTab({ user }) {
                   return (
                     <button key={topic.id} onClick={() => openTopic(topic)} style={{
                       display: 'block', width: '100%', textAlign: 'left',
-                      background: 'var(--color-background-paper)', borderRadius: '24px', padding: '22px 24px',
+                      background: 'var(--color-background-paper)', borderRadius: '16px', padding: '22px 24px',
                       border: '2px solid var(--color-action-sky)', cursor: 'pointer'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                         <div style={{ flex: 1 }}>
                           {cat && (
-                            <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, color: '#3b6fd4', background: '#f0f4ff', borderRadius: '9999px', padding: '2px 8px', marginBottom: '6px' }}>
+                            <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, color: 'var(--color-ink-black)', background: 'var(--color-fog-gray)', border: '1px solid var(--color-ink-black)', borderRadius: '10px', padding: '2px 8px', marginBottom: '6px' }}>
                               {cat.emoji} {cat.label}
                             </span>
                           )}
                           <h3 style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em', marginBottom: '6px' }}>{topic.title}</h3>
-                          <p style={{ fontSize: '13px', color: '#72a4f2', fontWeight: 600 }}>🤖 요약 결과 보기</p>
+                          <p style={{ fontSize: '13px', color: 'var(--color-ink-black)', fontWeight: 700, textDecoration: 'underline' }}>🤖 요약 결과 보기</p>
                         </div>
                         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                           {submitted && <span className="badge badge-green">✓ 제출</span>}

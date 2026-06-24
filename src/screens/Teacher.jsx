@@ -40,7 +40,7 @@ function AdminHeader({ section, setSection, onSettings, onLogout, title, onBack 
             key={s.id}
             onClick={() => setSection(s.id)}
             style={{
-              padding: '8px 16px', borderRadius: '9999px', border: 'none',
+              padding: '8px 16px', borderRadius: '10px', border: 'none',
               background: section === s.id ? 'var(--color-action-sky)' : 'transparent',
               color: 'var(--color-text-ink)', fontWeight: 700, fontSize: '14px',
               whiteSpace: 'nowrap', fontFamily: 'var(--font-main)'
@@ -56,7 +56,7 @@ function AdminHeader({ section, setSection, onSettings, onLogout, title, onBack 
 
 function StatCard({ label, value, color }) {
   return (
-    <div style={{ background: 'var(--color-background-paper)', borderRadius: '20px', padding: '18px 20px', border: '1.5px solid var(--color-border-stone)', flex: 1 }}>
+    <div style={{ background: 'var(--color-background-paper)', borderRadius: '16px', padding: '18px 20px', border: '1.5px solid var(--color-border-stone)', flex: 1 }}>
       <p style={{ fontSize: '12px', fontWeight: 700, color: '#aaa', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '6px' }}>{label}</p>
       <p style={{ fontSize: '26px', fontWeight: 900, color: color || 'var(--color-text-ink)', letterSpacing: '-0.02em' }}>{value}</p>
     </div>
@@ -148,7 +148,7 @@ function MeetingsSection({ meetings, onCreate, onDelete, ALL_GRADE_CLASSES }) {
                   </button>
                   <button
                     onClick={() => onDelete(m.id)}
-                    style={{ padding: '8px 14px', borderRadius: '9999px', border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600 }}
+                    style={{ padding: '8px 14px', borderRadius: '10px', border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600 }}
                   >
                     삭제
                   </button>
@@ -231,7 +231,7 @@ function ElectionsSection({ elections, onCreate, onDelete }) {
                 </div>
                 <button
                   onClick={() => onDelete(e.id)}
-                  style={{ padding: '8px 14px', borderRadius: '9999px', border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600, flexShrink: 0 }}
+                  style={{ padding: '8px 14px', borderRadius: '10px', border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600, flexShrink: 0 }}
                 >
                   삭제
                 </button>
@@ -382,7 +382,7 @@ function TodosSection({ todos, onCreate, onDelete }) {
                   key={s.key}
                   onClick={() => toggleAssign(s.key)}
                   style={{
-                    padding: '6px 12px', borderRadius: '9999px',
+                    padding: '6px 12px', borderRadius: '10px',
                     border: assigned.includes(s.key) ? '2px solid var(--color-outline-ebony)' : '1.5px solid var(--color-border-stone)',
                     background: assigned.includes(s.key) ? 'var(--color-action-sky)' : 'var(--color-background-paper)',
                     fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-main)'
@@ -427,7 +427,7 @@ function TodosSection({ todos, onCreate, onDelete }) {
                     <span className="badge badge-sky">{doneCount}/{totalCount} 완료</span>
                     <button
                       onClick={() => onDelete(t.id)}
-                      style={{ padding: '6px 12px', borderRadius: '9999px', border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600 }}
+                      style={{ padding: '6px 12px', borderRadius: '10px', border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600 }}
                     >
                       삭제
                     </button>
@@ -646,7 +646,7 @@ export default function Teacher({ onLogout }) {
                 { id: 'gemini', label: 'Gemini', sub: 'Google',    hasKey: hasGeminiKey, color: '#1d4ed8' }
               ].map(opt => (
                 <button key={opt.id} onClick={() => setAiProvider(opt.id)} style={{
-                  flex: 1, padding: '16px', borderRadius: '20px',
+                  flex: 1, padding: '16px', borderRadius: '16px',
                   border: aiProvider === opt.id ? `2px solid ${opt.color}` : '2px solid var(--color-border-stone)',
                   background: aiProvider === opt.id ? `${opt.color}12` : 'var(--color-background-paper)',
                   cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', fontFamily: 'var(--font-main)'
@@ -741,9 +741,9 @@ export default function Teacher({ onLogout }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {CATEGORIES.map(cat => (
                 <button key={cat.id} onClick={() => handleCategoryChange(cat.id)} style={{
-                  display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px', borderRadius: '20px',
-                  border: newCategory === cat.id ? '2px solid var(--color-action-sky)' : '1.5px solid var(--color-border-stone)',
-                  background: newCategory === cat.id ? 'rgba(100,170,255,0.08)' : 'var(--color-background-paper)',
+                  display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px', borderRadius: '16px',
+                  border: newCategory === cat.id ? '1px solid var(--color-ink-black)' : '1px solid var(--color-border-stone)',
+                  background: newCategory === cat.id ? 'rgba(251,255,43,0.35)' : 'var(--color-background-paper)',
                   cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', fontFamily: 'var(--font-main)'
                 }}>
                   <span style={{ fontSize: '24px', flexShrink: 0 }}>{cat.emoji}</span>
@@ -827,7 +827,7 @@ export default function Teacher({ onLogout }) {
                   </p>
                 </div>
               </div>
-              <div style={{ background: 'var(--color-canvas-oat)', borderRadius: '20px', padding: '20px 22px' }}>
+              <div style={{ background: 'var(--color-canvas-oat)', borderRadius: '16px', padding: '20px 22px' }}>
                 <p className="summary-text">{summary.summary}</p>
               </div>
             </div>
@@ -853,7 +853,7 @@ export default function Teacher({ onLogout }) {
           </div>
 
           <div style={{ borderTop: '1.5px solid var(--color-border-stone)', paddingTop: '16px' }}>
-            <button onClick={() => setConfirmDelete(currentTopic)} style={{ background: 'none', border: '1.5px solid #fca5a5', borderRadius: '9999px', padding: '10px 20px', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600 }}>
+            <button onClick={() => setConfirmDelete(currentTopic)} style={{ background: 'none', border: '1.5px solid #fca5a5', borderRadius: '10px', padding: '10px 20px', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600 }}>
               이 안건 삭제
             </button>
           </div>
@@ -884,7 +884,7 @@ export default function Teacher({ onLogout }) {
         {!loading && !(aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey) && (
           <div className="alert alert-warning" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>⚠️ {aiProvider === 'claude' ? 'Claude' : 'Gemini'} API 키를 설정해야 요약이 가능합니다</span>
-            <button onClick={goSettings} style={{ background: 'none', border: '1.5px solid #92400e', borderRadius: '9999px', padding: '4px 12px', color: '#92400e', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-main)' }}>설정하기</button>
+            <button onClick={goSettings} style={{ background: 'none', border: '1.5px solid #92400e', borderRadius: '10px', padding: '4px 12px', color: '#92400e', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-main)' }}>설정하기</button>
           </div>
         )}
 
@@ -916,7 +916,7 @@ export default function Teacher({ onLogout }) {
                         {topic.category && (() => {
                           const cat = CATEGORIES.find(c => c.id === topic.category)
                           return cat ? (
-                            <span style={{ fontSize: '12px', fontWeight: 700, padding: '3px 10px', borderRadius: '9999px', background: '#f0f4ff', color: '#3b6fd4' }}>{cat.emoji} {cat.label}</span>
+                            <span style={{ fontSize: '12px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: 'var(--color-fog-gray)', color: 'var(--color-ink-black)', border: '1px solid var(--color-ink-black)' }}>{cat.emoji} {cat.label}</span>
                           ) : null
                         })()}
                         <h3 style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-0.01em' }}>{topic.title}</h3>
@@ -932,7 +932,7 @@ export default function Teacher({ onLogout }) {
 
                   <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                     <button className="btn-secondary" onClick={() => { setSelected(topic); setView('detail'); setSummaryError('') }} style={{ flex: 1, padding: '10px 16px' }}>자세히 보기</button>
-                    <button onClick={() => setConfirmDelete(topic)} style={{ padding: '10px 16px', borderRadius: '9999px', border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600 }}>삭제</button>
+                    <button onClick={() => setConfirmDelete(topic)} style={{ padding: '10px 16px', borderRadius: '10px', border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-main)', fontWeight: 600 }}>삭제</button>
                   </div>
                 </div>
               )
@@ -950,7 +950,7 @@ export default function Teacher({ onLogout }) {
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="btn-secondary" onClick={() => setConfirmDelete(null)} style={{ flex: 1 }}>취소</button>
-              <button onClick={() => deleteTopic(confirmDelete.id)} style={{ flex: 2, padding: '14px', borderRadius: '9999px', border: 'none', background: '#ef4444', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-main)' }}>삭제하기</button>
+              <button onClick={() => deleteTopic(confirmDelete.id)} style={{ flex: 2, padding: '14px', borderRadius: '10px', border: 'none', background: '#ef4444', color: 'white', fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-main)' }}>삭제하기</button>
             </div>
           </div>
         </div>
