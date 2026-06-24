@@ -99,7 +99,7 @@ export default async function handler(req, res) {
   const prompt = buildPrompt(
     topic.title,
     topic.description,
-    submissions
+    submissions,
     topic.category
   )
 
