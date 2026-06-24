@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'Hakgyoansim Wooju';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2307-2@1.0/HakgyoansimWoojuR.woff2') format('woff2');
+  font-weight: normal;
+  font-display: swap;
+}
 :root {
   /* ── Programa 팔레트 ── */
   --color-ink-black: #1a1a1a;
@@ -16,8 +22,8 @@
   --color-footer-slate: #a3a3a3;
   --color-icon-ember: #1a1a1a;
 
-  --font-main: 'Inter', 'Noto Sans KR', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-
+--font-main: 'Hakgyoansim Wooju', 'Noto Sans KR', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  
   --radius-full: 10px;
   --radius-cards: 16px;
   --radius-inputs: 10px;
@@ -50,7 +56,7 @@ button {
 }
 
 input, textarea {
-  font-family: var(--font-main);
+  font-family: var(--);
 }
 
 /* ── Buttons ── */
