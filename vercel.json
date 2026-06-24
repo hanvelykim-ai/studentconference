@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/api/meetings/:id", "destination": "/api/meetings?id=:id" },
+    { "source": "/api/elections/:id", "destination": "/api/elections?id=:id" },
+    { "source": "/api/todos/:id", "destination": "/api/todos?id=:id" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
