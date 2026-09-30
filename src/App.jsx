@@ -61,12 +61,12 @@ export default function App() {
   }
 
   if (stage === 'student') {
-  return <Student user={user} onLogout={handleBack} />
-}
+    return <Student user={user} onLogout={handleBack} />
+  }
 
-if (stage === 'teacher') {
-  return <Teacher user={user} onLogout={handleBack} />
-}
+  if (stage === 'teacher') {
+    return <Teacher user={user} onLogout={handleBack} />
+  }
 
   return null
 }
