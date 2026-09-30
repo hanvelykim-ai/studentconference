@@ -1,32 +1,72 @@
 import { useState } from 'react'
-import Home from './screens/Home.jsx'
-import Login from './screens/Login.jsx'
-import Student from './screens/Student.jsx'
-import Teacher from './screens/Teacher.jsx'
+import Home from './screens/Home'
+import Login from './screens/Login'
+import Student from './screens/Student'
+import Teacher from './screens/Teacher'
+import { DEMO_USER_STUDENT, DEMO_USER_TEACHER } from './lib/demoData'
 
 export default function App() {
-  const [stage, setStage] = useState('home') // 'home' | 'login-student' | 'login-teacher'
+  const [stage, setStage] = useState('home')
   const [user, setUser] = useState(null)
 
-  function logout() {
+  function handleLogin(userData) {
+    setUser(userData)
+    setStage(userData.type === 'teacher' ? 'teacher' : 'student')
+  }
+
+  function handleDemoStudent() {
+    setUser(DEMO_USER_STUDENT)
+    setStage('student')
+  }
+
+  function handleDemoTeacher() {
+    setUser(DEMO_USER_TEACHER)
+    setStage('teacher')
+  }
+
+  function handleBack() {
     setUser(null)
     setStage('home')
   }
 
-  if (user?.type === 'teacher') return <Teacher onLogout={logout} />
-  if (user?.type === 'student') return <Student user={user} onLogout={logout} />
+  if (stage === 'home') {
+    return (
+      <Home
+        onLoginStudent={() => setStage('login-student')}
+        onLoginTeacher={() => setStage('login-teacher')}
+        onDemoStudent={handleDemoStudent}
+        onDemoTeacher={handleDemoTeacher}
+      />
+    )
+  }
 
   if (stage === 'login-student') {
-    return <Login mode="student" onBack={() => setStage('home')} onLogin={setUser} />
-  }
-  if (stage === 'login-teacher') {
-    return <Login mode="teacher" onBack={() => setStage('home')} onLogin={setUser} />
+    return (
+      <Login
+        type="student"
+        onLogin={handleLogin}
+        onBack={() => setStage('home')}
+      />
+    )
   }
 
-  return (
-    <Home
-      onStudentEnter={() => setStage('login-student')}
-      onTeacherEnter={() => setStage('login-teacher')}
-    />
-  )
+  if (stage === 'login-teacher') {
+    return (
+      <Login
+        type="teacher"
+        onLogin={handleLogin}
+        onBack={() => setStage('home')}
+      />
+    )
+  }
+
+  if (stage === 'student') {
+    return <Student user={user} onBack={handleBack} />
+  }
+
+  if (stage === 'teacher') {
+    return <Teacher user={user} onBack={handleBack} />
+  }
+
+  return null
 }
