@@ -1,7 +1,33 @@
 import { useState, useEffect, useCallback } from 'react'
 import { identityKey, classKey, identityLabel, canSeeMeetings, canCheckAttendance } from '../lib/identity.js'
+import {
+  DEMO_MEETINGS, DEMO_ELECTIONS, DEMO_TODOS,
+  DEMO_TOPICS, DEMO_SUBMISSIONS, DEMO_SUMMARIES
+} from '../lib/demoData.js'
 
 /* ───────────────────────── Shared bits ───────────────────────── */
+
+function DemoBanner({ onExit }) {
+  return (
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 100,
+      background: 'var(--color-highlighter-yellow)',
+      borderBottom: '1.5px solid var(--color-ink-black)',
+      padding: '8px 16px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
+    }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-ink-black)', letterSpacing: '-0.03em' }}>
+        🔍 전시용 체험 중 — 실제 데이터에 영향 없음
+      </span>
+      <button onClick={onExit} style={{
+        background: 'var(--color-ink-black)', color: '#fff',
+        border: 'none', borderRadius: 8, padding: '4px 12px',
+        fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-main)',
+        letterSpacing: '-0.03em', whiteSpace: 'nowrap', flexShrink: 0
+      }}>나가기</button>
+    </div>
+  )
+}
 
 function Header({ user, onLogout }) {
   return (
@@ -22,13 +48,13 @@ function Header({ user, onLogout }) {
   )
 }
 
-function TabBar({ tabs, active, onChange }) {
+function TabBar({ tabs, active, onChange, offset }) {
   return (
     <div style={{
       display: 'flex', gap: '6px', padding: '10px 16px',
       background: 'var(--color-background-paper)',
       borderBottom: '1.5px solid var(--color-border-stone)',
-      position: 'sticky', top: '57px', zIndex: 49, overflowX: 'auto'
+      position: 'sticky', top: offset ?? '57px', zIndex: 49, overflowX: 'auto'
     }}>
       {tabs.map(t => (
         <button
@@ -223,22 +249,30 @@ function TodosTab({ user, todos, onToggleTodo }) {
 
 /* ───────────────────────── 안건 탭 (반대표 전용) ───────────────────────── */
 
-function TopicsTab({ user }) {
-  const [topics, setTopics]        = useState([])
-  const [mySubmissions, setMySubs] = useState([])
+function TopicsTab({ user, isDemo, demoTopics, demoSubmissions, demoSummaries }) {
+  const [topics, setTopics]        = useState(isDemo ? demoTopics : [])
+  const [mySubmissions, setMySubs] = useState(
+    isDemo ? demoSubmissions.filter(s => s.grade === user.grade && s.class === user.class) : []
+  )
   const [selected, setSelected]    = useState(null)
   const [summary, setSummary]      = useState(null)
   const [items, setItems]          = useState([''])
-  const [loading, setLoading]      = useState(true)
+  const [loading, setLoading]      = useState(!isDemo)
   const [saving, setSaving]        = useState(false)
   const [saved, setSaved]          = useState(false)
   const [categoryWarning, setCategoryWarning] = useState('')
+  const [demoToast, setDemoToast]  = useState('')
 
   const CATEGORIES = [
     { id: '협의사항', label: '협의사항', emoji: '🤝', desc: '학생들이 함께 지킬 내용' },
     { id: '건의사항', label: '건의사항', emoji: '📣', desc: '학교에서 해결해줄 내용' },
     { id: '이달의안건', label: '이 달의 안건', emoji: '📅', desc: '이번 달 주요 안건' }
   ]
+
+  function showDemoToast(msg) {
+    setDemoToast(msg)
+    setTimeout(() => setDemoToast(''), 2500)
+  }
 
   function checkMismatch(itemList, category) {
     if (!category) return ''
@@ -253,6 +287,7 @@ function TopicsTab({ user }) {
   }
 
   const load = useCallback(async () => {
+    if (isDemo) return
     setLoading(true)
     try {
       const [tRes, sRes] = await Promise.all([
@@ -268,7 +303,7 @@ function TopicsTab({ user }) {
     } finally {
       setLoading(false)
     }
-  }, [user.grade, user.class])
+  }, [user.grade, user.class, isDemo])
 
   useEffect(() => { load() }, [load])
 
@@ -289,8 +324,12 @@ function TopicsTab({ user }) {
       setItems([''])
     }
     if (topic.status === 'completed') {
-      const r = await fetch(`/api/summaries/${topic.id}`)
-      if (r.ok) setSummary(await r.json())
+      if (isDemo) {
+        setSummary(demoSummaries[topic.id] || null)
+      } else {
+        const r = await fetch(`/api/summaries/${topic.id}`)
+        if (r.ok) setSummary(await r.json())
+      }
     }
   }
 
@@ -333,6 +372,13 @@ function TopicsTab({ user }) {
   async function submit() {
     const filled = items.filter(i => i.trim())
     if (filled.length === 0 || saving) return
+
+    if (isDemo) {
+      showDemoToast('✓ 체험 모드: 제출된 것처럼 보이지만 저장되지 않아요')
+      setSaved(true)
+      return
+    }
+
     setSaving(true)
     try {
       const content = filled.join('\n')
@@ -359,6 +405,15 @@ function TopicsTab({ user }) {
 
     return (
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {demoToast && (
+          <div style={{
+            position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+            background: 'var(--color-ink-black)', color: '#fff',
+            padding: '10px 20px', borderRadius: 10, fontSize: 14,
+            zIndex: 999, whiteSpace: 'nowrap', letterSpacing: '-0.03em'
+          }}>{demoToast}</div>
+        )}
+
         <button className="btn-ghost" onClick={() => { setSelected(null); setSaved(false); setSummary(null); setCategoryWarning('') }}>
           ← 목록
         </button>
@@ -412,7 +467,7 @@ function TopicsTab({ user }) {
             의견을 한 줄씩 입력하고 <kbd style={{ background: '#f0f0f0', borderRadius: '4px', padding: '1px 5px', fontSize: '12px', fontFamily: 'monospace' }}>Enter</kbd>를 누르면 다음 칸이 생겨요
           </p>
 
-          {saved && <div className="alert alert-success" style={{ marginBottom: '14px' }}>✓ 성공적으로 제출되었습니다.</div>}
+          {saved && <div className="alert alert-success" style={{ marginBottom: '14px' }}>✓ {isDemo ? '체험 모드: 실제로 저장되지 않아요' : '성공적으로 제출되었습니다.'}</div>}
           {!isCompleted && existingSub && !saved && (
             <div className="alert alert-info" style={{ marginBottom: '14px' }}>이미 제출된 내용이 있습니다. 수정 후 다시 제출할 수 있습니다.</div>
           )}
@@ -468,7 +523,7 @@ function TopicsTab({ user }) {
           <h2 style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '-0.02em', marginBottom: '4px' }}>회의 안건</h2>
           <p style={{ color: '#888', fontSize: '14px' }}>각 안건을 클릭해서 우리 반 의견을 입력해요</p>
         </div>
-        <button className="btn-secondary" onClick={load} style={{ padding: '8px 14px', fontSize: '13px' }}>새로고침</button>
+        {!isDemo && <button className="btn-secondary" onClick={load} style={{ padding: '8px 14px', fontSize: '13px' }}>새로고침</button>}
       </div>
 
       {loading ? (
@@ -560,12 +615,14 @@ function TopicsTab({ user }) {
 /* ───────────────────────── 메인 컨테이너 ───────────────────────── */
 
 export default function Student({ user, onLogout }) {
-  const [tab, setTab]         = useState('home')
-  const [meetings, setMeetings] = useState([])
-  const [elections, setElections] = useState([])
-  const [todos, setTodos]     = useState([])
+  const isDemo = user?.demo === true
+  const [tab, setTab]           = useState('home')
+  const [meetings, setMeetings] = useState(isDemo ? DEMO_MEETINGS : [])
+  const [elections, setElections] = useState(isDemo ? DEMO_ELECTIONS : [])
+  const [todos, setTodos]       = useState(isDemo ? DEMO_TODOS : [])
 
   const loadShared = useCallback(async () => {
+    if (isDemo) return
     try {
       const [mRes, eRes, tdRes] = await Promise.all([
         fetch('/api/meetings'),
@@ -578,11 +635,27 @@ export default function Student({ user, onLogout }) {
     } catch {
       // ignore
     }
-  }, [user])
+  }, [user, isDemo])
 
   useEffect(() => { loadShared() }, [loadShared])
 
   async function toggleAttendance(meetingId) {
+    if (isDemo) {
+      // 데모 모드: 로컬 상태만 토글
+      setMeetings(prev => prev.map(m => {
+        if (m.id !== meetingId) return m
+        const key = `${user.grade}-${user.class}`
+        const att = m.attendance || []
+        const already = att.some(a => `${a.grade}-${a.class}` === key)
+        return {
+          ...m,
+          attendance: already
+            ? att.filter(a => `${a.grade}-${a.class}` !== key)
+            : [...att, { grade: user.grade, class: user.class }]
+        }
+      }))
+      return
+    }
     await fetch(`/api/meetings/${meetingId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -592,6 +665,16 @@ export default function Student({ user, onLogout }) {
   }
 
   async function toggleTodo(todoId) {
+    if (isDemo) {
+      const myKey = identityKey(user)
+      setTodos(prev => prev.map(t => {
+        if (t.id !== todoId) return t
+        const cb = t.completedBy || []
+        const done = cb.includes(myKey)
+        return { ...t, completedBy: done ? cb.filter(k => k !== myKey) : [...cb, myKey] }
+      }))
+      return
+    }
     await fetch(`/api/todos/${todoId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -607,14 +690,26 @@ export default function Student({ user, onLogout }) {
     { id: 'todos', label: '할일', emoji: '✅' }
   ]
 
+  // 데모 배너가 있으면 TabBar top 위치 조정
+  const tabBarTop = isDemo ? '41px' : '57px'
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
+      {isDemo && <DemoBanner onExit={onLogout} />}
       <Header user={user} onLogout={onLogout} />
-      <TabBar tabs={tabs} active={tab} onChange={setTab} />
+      <TabBar tabs={tabs} active={tab} onChange={setTab} offset={isDemo ? '98px' : '57px'} />
 
       {tab === 'home' && <HomeTab user={user} meetings={meetings} elections={elections} todos={todos} onToggleTodo={toggleTodo} />}
       {tab === 'meetings' && canSeeMeetings(user) && <MeetingsTab user={user} meetings={meetings} onToggleAttendance={toggleAttendance} />}
-      {tab === 'topics' && user.mode === 'class' && <TopicsTab user={user} />}
+      {tab === 'topics' && user.mode === 'class' && (
+        <TopicsTab
+          user={user}
+          isDemo={isDemo}
+          demoTopics={DEMO_TOPICS}
+          demoSubmissions={DEMO_SUBMISSIONS}
+          demoSummaries={DEMO_SUMMARIES}
+        />
+      )}
       {tab === 'todos' && <TodosTab user={user} todos={todos} onToggleTodo={toggleTodo} />}
     </div>
   )
