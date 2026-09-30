@@ -1,19 +1,45 @@
 import { useState, useEffect, useCallback } from 'react'
 import { allSlots } from '../lib/identity.js'
+import {
+  DEMO_MEETINGS, DEMO_ELECTIONS, DEMO_TODOS,
+  DEMO_TOPICS, DEMO_SUBMISSIONS, DEMO_SUMMARIES, DEMO_STUDENTS
+} from '../lib/demoData.js'
 
 /* ───────────────────────── Shared ───────────────────────── */
 
+function DemoBanner({ onExit }) {
+  return (
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 100,
+      background: 'var(--color-highlighter-yellow)',
+      borderBottom: '1.5px solid var(--color-ink-black)',
+      padding: '8px 16px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12
+    }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-ink-black)', letterSpacing: '-0.03em' }}>
+        🔍 전시용 체험 중 — 실제 데이터에 영향 없음
+      </span>
+      <button onClick={onExit} style={{
+        background: 'var(--color-ink-black)', color: '#fff',
+        border: 'none', borderRadius: 8, padding: '4px 12px',
+        fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-main)',
+        letterSpacing: '-0.03em', whiteSpace: 'nowrap', flexShrink: 0
+      }}>나가기</button>
+    </div>
+  )
+}
+
 const SECTIONS = [
-  { id: 'topics',   label: '안건',     emoji: '📋' },
+  { id: 'topics',    label: '안건',     emoji: '📋' },
   { id: 'meetings',  label: '회의',     emoji: '📅' },
   { id: 'elections', label: '선거',     emoji: '🗳️' },
   { id: 'students',  label: '학생등록', emoji: '🧑‍🎓' },
   { id: 'todos',     label: '할일',     emoji: '✅' }
 ]
 
-function AdminHeader({ section, setSection, onSettings, onLogout, title, onBack }) {
+function AdminHeader({ section, setSection, onSettings, onLogout, title, onBack, isDemo }) {
   return (
-    <div style={{ position: 'sticky', top: 0, zIndex: 50 }}>
+    <div style={{ position: 'sticky', top: isDemo ? '41px' : 0, zIndex: 50 }}>
       <div style={{
         background: 'var(--color-background-paper)',
         borderBottom: '1.5px solid var(--color-border-stone)',
@@ -72,7 +98,7 @@ function formatDate(d) {
 
 /* ───────────────────────── 회의 관리 ───────────────────────── */
 
-function MeetingsSection({ meetings, onCreate, onDelete, ALL_GRADE_CLASSES }) {
+function MeetingsSection({ meetings, onCreate, onDelete, ALL_GRADE_CLASSES, isDemo }) {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [date, setDate]   = useState('')
@@ -92,7 +118,6 @@ function MeetingsSection({ meetings, onCreate, onDelete, ALL_GRADE_CLASSES }) {
     }
   }
 
-  // 전체 반 목록 (4-6학년만 참여 체크 대상)
   const allClasses = []
   for (const g of [4, 5, 6]) {
     for (const c of ALL_GRADE_CLASSES[g] || []) allClasses.push({ grade: g, class: c })
@@ -109,6 +134,7 @@ function MeetingsSection({ meetings, onCreate, onDelete, ALL_GRADE_CLASSES }) {
 
       {showForm && (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {isDemo && <div className="alert alert-info">🔍 체험 모드: 실제로 저장되지 않습니다</div>}
           <input className="input" placeholder="회의 제목 (예: 4월 전교 학생자치회의)" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
           <div style={{ display: 'flex', gap: '10px' }}>
             <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} style={{ flex: 1 }} />
@@ -177,7 +203,7 @@ function MeetingsSection({ meetings, onCreate, onDelete, ALL_GRADE_CLASSES }) {
 
 /* ───────────────────────── 선거 관리 ───────────────────────── */
 
-function ElectionsSection({ elections, onCreate, onDelete }) {
+function ElectionsSection({ elections, onCreate, onDelete, isDemo }) {
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [date, setDate]   = useState('')
@@ -206,6 +232,7 @@ function ElectionsSection({ elections, onCreate, onDelete }) {
 
       {showForm && (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {isDemo && <div className="alert alert-info">🔍 체험 모드: 실제로 저장되지 않습니다</div>}
           <input className="input" placeholder="선거 제목 (예: 2학기 전교 회장단 선거)" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
           <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} />
           <textarea className="textarea" placeholder="설명 (선택)" value={desc} onChange={e => setDesc(e.target.value)} style={{ minHeight: '80px' }} />
@@ -246,7 +273,7 @@ function ElectionsSection({ elections, onCreate, onDelete }) {
 
 /* ───────────────────────── 학생 등록 (비공개) ───────────────────────── */
 
-function StudentsSection({ students, onSave }) {
+function StudentsSection({ students, onSave, isDemo }) {
   const slots = allSlots()
   const [drafts, setDrafts] = useState({})
   const [savedFlash, setSavedFlash] = useState(null)
@@ -263,7 +290,6 @@ function StudentsSection({ students, onSave }) {
     setTimeout(() => setSavedFlash(null), 1200)
   }
 
-  // 학년반별 그룹
   const classSlots = slots.filter(s => s.key.startsWith('c-'))
   const schoolSlots = slots.filter(s => s.key.startsWith('s-'))
   const grouped = {}
@@ -280,7 +306,10 @@ function StudentsSection({ students, onSave }) {
         <p style={{ color: '#888', fontSize: '14px' }}>직위에 실제 학생 이름을 매칭해두세요. 이 정보는 관리자만 볼 수 있어요.</p>
       </div>
 
-      <div className="alert alert-info">🔒 여기서 등록한 이름은 학생 화면에는 절대 표시되지 않습니다.</div>
+      {isDemo
+        ? <div className="alert alert-info">🔍 체험 모드에서는 학생 이름을 저장할 수 없습니다. 미리 등록된 이름을 확인해보세요.</div>
+        : <div className="alert alert-info">🔒 여기서 등록한 이름은 학생 화면에는 절대 표시되지 않습니다.</div>
+      }
 
       <div className="card">
         <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '14px' }}>전교 임원</h3>
@@ -292,9 +321,10 @@ function StudentsSection({ students, onSave }) {
                 className="input"
                 placeholder="이름 입력"
                 value={nameFor(s.key)}
-                onChange={e => setDrafts(d => ({ ...d, [s.key]: e.target.value }))}
-                onBlur={() => handleBlur(s.key)}
-                style={{ flex: 1, padding: '10px 16px' }}
+                disabled={isDemo}
+                onChange={e => !isDemo && setDrafts(d => ({ ...d, [s.key]: e.target.value }))}
+                onBlur={() => !isDemo && handleBlur(s.key)}
+                style={{ flex: 1, padding: '10px 16px', opacity: isDemo ? 0.7 : 1 }}
               />
               {savedFlash === s.key && <span style={{ color: '#15803d', fontSize: '12px', fontWeight: 700 }}>✓ 저장됨</span>}
             </div>
@@ -313,9 +343,10 @@ function StudentsSection({ students, onSave }) {
                   className="input"
                   placeholder="이름 입력"
                   value={nameFor(s.key)}
-                  onChange={e => setDrafts(d => ({ ...d, [s.key]: e.target.value }))}
-                  onBlur={() => handleBlur(s.key)}
-                  style={{ flex: 1, padding: '10px 16px' }}
+                  disabled={isDemo}
+                  onChange={e => !isDemo && setDrafts(d => ({ ...d, [s.key]: e.target.value }))}
+                  onBlur={() => !isDemo && handleBlur(s.key)}
+                  style={{ flex: 1, padding: '10px 16px', opacity: isDemo ? 0.7 : 1 }}
                 />
                 {savedFlash === s.key && <span style={{ color: '#15803d', fontSize: '12px', fontWeight: 700 }}>✓ 저장됨</span>}
               </div>
@@ -329,7 +360,7 @@ function StudentsSection({ students, onSave }) {
 
 /* ───────────────────────── 할 일 관리 ───────────────────────── */
 
-function TodosSection({ todos, onCreate, onDelete }) {
+function TodosSection({ todos, onCreate, onDelete, isDemo }) {
   const slots = allSlots()
   const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
@@ -368,6 +399,7 @@ function TodosSection({ todos, onCreate, onDelete }) {
 
       {showForm && (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {isDemo && <div className="alert alert-info">🔍 체험 모드: 실제로 저장되지 않습니다</div>}
           <input className="input" placeholder="할 일 제목" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
           <textarea className="textarea" placeholder="설명 (선택)" value={desc} onChange={e => setDesc(e.target.value)} style={{ minHeight: '70px' }} />
           <div>
@@ -444,21 +476,30 @@ function TodosSection({ todos, onCreate, onDelete }) {
 
 /* ───────────────────────── 메인 컴포넌트 ───────────────────────── */
 
-export default function Teacher({ onLogout }) {
+export default function Teacher({ user, onLogout }) {
+  const isDemo = user?.demo === true
+
   const [section, setSection] = useState('topics')
   const [view, setView]           = useState('dashboard')
-  const [topics, setTopics]       = useState([])
-  const [submissions, setSubs]    = useState([])
-  const [summaries, setSummaries] = useState({})
+  const [topics, setTopics]       = useState(isDemo ? DEMO_TOPICS : [])
+  const [submissions, setSubs]    = useState(isDemo ? DEMO_SUBMISSIONS : [])
+  const [summaries, setSummaries] = useState(isDemo ? DEMO_SUMMARIES : {})
   const [selected, setSelected]   = useState(null)
-  const [loading, setLoading]     = useState(true)
+  const [loading, setLoading]     = useState(!isDemo)
   const [summarizing, setSummarizing] = useState(false)
   const [summaryError, setSummaryError] = useState('')
 
-  const [meetings, setMeetings]   = useState([])
-  const [elections, setElections] = useState([])
-  const [students, setStudents]   = useState([])
-  const [todos, setTodos]         = useState([])
+  const [meetings, setMeetings]   = useState(isDemo ? DEMO_MEETINGS : [])
+  const [elections, setElections] = useState(isDemo ? DEMO_ELECTIONS : [])
+  const [students, setStudents]   = useState(isDemo ? DEMO_STUDENTS : [])
+  const [todos, setTodos]         = useState(isDemo ? DEMO_TODOS : [])
+
+  // 데모 토스트
+  const [demoToast, setDemoToast] = useState('')
+  function showDemoToast(msg) {
+    setDemoToast(msg)
+    setTimeout(() => setDemoToast(''), 2500)
+  }
 
   // Create topic
   const [newTitle, setNewTitle] = useState('')
@@ -494,15 +535,15 @@ export default function Teacher({ onLogout }) {
   const [geminiKey, setGeminiKey]   = useState('')
   const [newPin, setNewPin]         = useState('')
   const [aiProvider, setAiProvider] = useState('claude')
-  const [hasClaudeKey, setHasClaudeKey] = useState(false)
+  const [hasClaudeKey, setHasClaudeKey] = useState(isDemo ? true : false)
   const [hasGeminiKey, setHasGeminiKey] = useState(false)
   const [settingMsg, setSettingMsg] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null)
 
-  // 학년/반 목록 (회의 참여현황 계산용 - 등록 화면과 동일 구조)
   const ALL_GRADE_CLASSES = { 2: [1, 2, 3, 4], 3: [1, 2], 4: [1, 2], 5: [1, 2], 6: [1] }
 
   const loadData = useCallback(async () => {
+    if (isDemo) return
     setLoading(true)
     try {
       const [tRes, sRes, cfgRes, mRes, eRes, stRes, tdRes] = await Promise.all([
@@ -538,7 +579,7 @@ export default function Teacher({ onLogout }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [isDemo])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -546,6 +587,10 @@ export default function Teacher({ onLogout }) {
 
   async function createTopic() {
     if (!newTitle.trim() || !newCategory || creating) return
+    if (isDemo) {
+      showDemoToast('🔍 체험 모드: 안건 등록은 실제 앱에서 이용해주세요')
+      return
+    }
     setCreating(true)
     try {
       await fetch('/api/topics', {
@@ -561,6 +606,7 @@ export default function Teacher({ onLogout }) {
   }
 
   async function deleteTopic(id) {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 삭제는 실제 앱에서 이용해주세요'); setConfirmDelete(null); return }
     await fetch(`/api/topics/${id}`, { method: 'DELETE' })
     setConfirmDelete(null)
     if (selected?.id === id) { setSelected(null); setView('dashboard') }
@@ -568,6 +614,16 @@ export default function Teacher({ onLogout }) {
   }
 
   async function summarize(topic) {
+    if (isDemo) {
+      const demoSum = DEMO_SUMMARIES[topic.id]
+      if (demoSum) {
+        setSummaries(prev => ({ ...prev, [topic.id]: demoSum }))
+        showDemoToast('🤖 체험 모드: 미리 준비된 요약 결과를 표시합니다')
+      } else {
+        showDemoToast('🔍 체험 모드: 이 안건의 요약 데이터가 없습니다')
+      }
+      return
+    }
     setSummarizing(true)
     setSummaryError('')
     try {
@@ -586,6 +642,7 @@ export default function Teacher({ onLogout }) {
   }
 
   async function saveSettings() {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 설정 변경은 실제 앱에서 이용해주세요'); return }
     const body = { aiProvider }
     if (claudeKey.trim()) body.claudeApiKey = claudeKey.trim()
     if (geminiKey.trim()) body.geminiApiKey = geminiKey.trim()
@@ -599,43 +656,68 @@ export default function Teacher({ onLogout }) {
 
   // ── 회의 / 선거 / 학생등록 / 할일: API 연동 ──
   async function createMeeting(payload) {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 회의 등록은 실제 앱에서 이용해주세요'); return }
     await fetch('/api/meetings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     await loadData()
   }
   async function deleteMeeting(id) {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 삭제는 실제 앱에서 이용해주세요'); return }
     await fetch(`/api/meetings/${id}`, { method: 'DELETE' })
     await loadData()
   }
   async function createElection(payload) {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 선거 등록은 실제 앱에서 이용해주세요'); return }
     await fetch('/api/elections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     await loadData()
   }
   async function deleteElection(id) {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 삭제는 실제 앱에서 이용해주세요'); return }
     await fetch(`/api/elections/${id}`, { method: 'DELETE' })
     await loadData()
   }
   async function saveStudentName(slotKey, name) {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 학생 저장은 실제 앱에서 이용해주세요'); return }
     await fetch('/api/students', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slotKey, name }) })
     await loadData()
   }
   async function createTodo(payload) {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 할 일 등록은 실제 앱에서 이용해주세요'); return }
     await fetch('/api/todos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     await loadData()
   }
   async function deleteTodo(id) {
+    if (isDemo) { showDemoToast('🔍 체험 모드: 삭제는 실제 앱에서 이용해주세요'); return }
     await fetch(`/api/todos/${id}`, { method: 'DELETE' })
     await loadData()
   }
 
   const goSettings = () => setView('settings')
 
-  // ── 설정 화면 (모든 섹션에서 접근 가능) ──
+  // 데모 토스트 UI
+  const ToastEl = demoToast ? (
+    <div style={{
+      position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+      background: 'var(--color-ink-black)', color: '#fff',
+      padding: '10px 20px', borderRadius: 10, fontSize: 14,
+      zIndex: 9999, whiteSpace: 'nowrap', letterSpacing: '-0.03em'
+    }}>{demoToast}</div>
+  ) : null
+
+  // ── 설정 화면 ──
   if (view === 'settings') {
-    const activeKeyOk = aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey
+    const activeKeyOk = isDemo || (aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey)
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <AdminHeader section={section} setSection={s => { setSection(s); setView('dashboard') }} onSettings={goSettings} onLogout={onLogout} title="설정" onBack={() => setView('dashboard')} />
+        {isDemo && <DemoBanner onExit={onLogout} />}
+        {ToastEl}
+        <AdminHeader section={section} setSection={s => { setSection(s); setView('dashboard') }} onSettings={goSettings} onLogout={onLogout} title="설정" onBack={() => setView('dashboard')} isDemo={isDemo} />
         <div style={{ maxWidth: '520px', margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {isDemo && (
+            <div className="alert alert-info">
+              🔍 체험 모드에서는 설정을 변경할 수 없습니다. 현재 AI 요약 모델: Claude
+            </div>
+          )}
 
           <div className="card">
             <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '6px' }}>AI 제공사 선택</h3>
@@ -645,11 +727,12 @@ export default function Teacher({ onLogout }) {
                 { id: 'claude', label: 'Claude', sub: 'Anthropic', hasKey: hasClaudeKey, color: '#7c3aed' },
                 { id: 'gemini', label: 'Gemini', sub: 'Google',    hasKey: hasGeminiKey, color: '#1d4ed8' }
               ].map(opt => (
-                <button key={opt.id} onClick={() => setAiProvider(opt.id)} style={{
+                <button key={opt.id} onClick={() => !isDemo && setAiProvider(opt.id)} disabled={isDemo} style={{
                   flex: 1, padding: '16px', borderRadius: '16px',
                   border: aiProvider === opt.id ? `2px solid ${opt.color}` : '2px solid var(--color-border-stone)',
                   background: aiProvider === opt.id ? `${opt.color}12` : 'var(--color-background-paper)',
-                  cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', fontFamily: 'var(--font-main)'
+                  cursor: isDemo ? 'not-allowed' : 'pointer', textAlign: 'left', transition: 'all 0.15s', fontFamily: 'var(--font-main)',
+                  opacity: isDemo ? 0.7 : 1
                 }}>
                   <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-text-ink)', marginBottom: '4px' }}>{aiProvider === opt.id ? '✓ ' : ''}{opt.label}</div>
                   <div style={{ fontSize: '12px', color: '#888' }}>{opt.sub}</div>
@@ -659,34 +742,38 @@ export default function Teacher({ onLogout }) {
             </div>
           </div>
 
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 700 }}>Claude API 키</h3>
-              {hasClaudeKey ? <span style={{ fontSize: '12px', color: '#15803d', fontWeight: 700 }}>✓ 설정됨</span> : <span style={{ fontSize: '12px', color: '#aaa' }}>미설정</span>}
-            </div>
-            <p style={{ color: '#777', fontSize: '13px', marginBottom: '12px' }}>Anthropic Console에서 발급 · sk-ant-...</p>
-            <input className="input" type="password" placeholder={hasClaudeKey ? '새 키를 입력하면 교체됩니다' : 'sk-ant-...'} value={claudeKey} onChange={e => setClaudeKey(e.target.value)} />
-          </div>
+          {!isDemo && (
+            <>
+              <div className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 700 }}>Claude API 키</h3>
+                  {hasClaudeKey ? <span style={{ fontSize: '12px', color: '#15803d', fontWeight: 700 }}>✓ 설정됨</span> : <span style={{ fontSize: '12px', color: '#aaa' }}>미설정</span>}
+                </div>
+                <p style={{ color: '#777', fontSize: '13px', marginBottom: '12px' }}>Anthropic Console에서 발급 · sk-ant-...</p>
+                <input className="input" type="password" placeholder={hasClaudeKey ? '새 키를 입력하면 교체됩니다' : 'sk-ant-...'} value={claudeKey} onChange={e => setClaudeKey(e.target.value)} />
+              </div>
 
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <h3 style={{ fontSize: '17px', fontWeight: 700 }}>Gemini API 키</h3>
-              {hasGeminiKey ? <span style={{ fontSize: '12px', color: '#15803d', fontWeight: 700 }}>✓ 설정됨</span> : <span style={{ fontSize: '12px', color: '#aaa' }}>미설정</span>}
-            </div>
-            <p style={{ color: '#777', fontSize: '13px', marginBottom: '12px' }}>Google AI Studio에서 발급 · AIza...</p>
-            <input className="input" type="password" placeholder={hasGeminiKey ? '새 키를 입력하면 교체됩니다' : 'AIza...'} value={geminiKey} onChange={e => setGeminiKey(e.target.value)} />
-          </div>
+              <div className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <h3 style={{ fontSize: '17px', fontWeight: 700 }}>Gemini API 키</h3>
+                  {hasGeminiKey ? <span style={{ fontSize: '12px', color: '#15803d', fontWeight: 700 }}>✓ 설정됨</span> : <span style={{ fontSize: '12px', color: '#aaa' }}>미설정</span>}
+                </div>
+                <p style={{ color: '#777', fontSize: '13px', marginBottom: '12px' }}>Google AI Studio에서 발급 · AIza...</p>
+                <input className="input" type="password" placeholder={hasGeminiKey ? '새 키를 입력하면 교체됩니다' : 'AIza...'} value={geminiKey} onChange={e => setGeminiKey(e.target.value)} />
+              </div>
 
-          <div className="card">
-            <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '6px' }}>교사 PIN 변경</h3>
-            <p style={{ color: '#777', fontSize: '13px', marginBottom: '12px' }}>교사 모드 진입 PIN을 변경합니다</p>
-            <input className="input" type="password" placeholder="새 PIN 번호" value={newPin} onChange={e => setNewPin(e.target.value)} />
-          </div>
+              <div className="card">
+                <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '6px' }}>교사 PIN 변경</h3>
+                <p style={{ color: '#777', fontSize: '13px', marginBottom: '12px' }}>교사 모드 진입 PIN을 변경합니다</p>
+                <input className="input" type="password" placeholder="새 PIN 번호" value={newPin} onChange={e => setNewPin(e.target.value)} />
+              </div>
+            </>
+          )}
 
           {!activeKeyOk && <div className="alert alert-warning">현재 선택된 AI({aiProvider === 'claude' ? 'Claude' : 'Gemini'})의 API 키가 설정되지 않았습니다.</div>}
           {settingMsg && <div className="alert alert-success">{settingMsg}</div>}
 
-          <button className="btn-primary" onClick={saveSettings} style={{ width: '100%', fontSize: '16px', padding: '18px' }}>저장하기</button>
+          <button className="btn-primary" onClick={saveSettings} disabled={isDemo} style={{ width: '100%', fontSize: '16px', padding: '18px', opacity: isDemo ? 0.5 : 1, cursor: isDemo ? 'not-allowed' : 'pointer' }}>저장하기</button>
         </div>
       </div>
     )
@@ -696,32 +783,40 @@ export default function Teacher({ onLogout }) {
   if (section === 'meetings') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" />
-        <MeetingsSection meetings={meetings} onCreate={createMeeting} onDelete={deleteMeeting} ALL_GRADE_CLASSES={ALL_GRADE_CLASSES} />
+        {isDemo && <DemoBanner onExit={onLogout} />}
+        {ToastEl}
+        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" isDemo={isDemo} />
+        <MeetingsSection meetings={meetings} onCreate={createMeeting} onDelete={deleteMeeting} ALL_GRADE_CLASSES={ALL_GRADE_CLASSES} isDemo={isDemo} />
       </div>
     )
   }
   if (section === 'elections') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" />
-        <ElectionsSection elections={elections} onCreate={createElection} onDelete={deleteElection} />
+        {isDemo && <DemoBanner onExit={onLogout} />}
+        {ToastEl}
+        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" isDemo={isDemo} />
+        <ElectionsSection elections={elections} onCreate={createElection} onDelete={deleteElection} isDemo={isDemo} />
       </div>
     )
   }
   if (section === 'students') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" />
-        <StudentsSection students={students} onSave={saveStudentName} />
+        {isDemo && <DemoBanner onExit={onLogout} />}
+        {ToastEl}
+        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" isDemo={isDemo} />
+        <StudentsSection students={students} onSave={saveStudentName} isDemo={isDemo} />
       </div>
     )
   }
   if (section === 'todos') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" />
-        <TodosSection todos={todos} onCreate={createTodo} onDelete={deleteTodo} />
+        {isDemo && <DemoBanner onExit={onLogout} />}
+        {ToastEl}
+        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" isDemo={isDemo} />
+        <TodosSection todos={todos} onCreate={createTodo} onDelete={deleteTodo} isDemo={isDemo} />
       </div>
     )
   }
@@ -731,8 +826,14 @@ export default function Teacher({ onLogout }) {
     const selectedCat = CATEGORIES.find(c => c.id === newCategory)
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="새 안건 등록" onBack={() => { setView('dashboard'); setCategoryWarning('') }} />
+        {isDemo && <DemoBanner onExit={onLogout} />}
+        {ToastEl}
+        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="새 안건 등록" onBack={() => { setView('dashboard'); setCategoryWarning('') }} isDemo={isDemo} />
         <div style={{ maxWidth: '560px', margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {isDemo && (
+            <div className="alert alert-info">🔍 체험 모드: 안건 등록 화면을 미리 볼 수 있어요. 실제로 저장되지 않습니다.</div>
+          )}
 
           <div className="card">
             <label style={{ display: 'block', fontSize: '14px', fontWeight: 700, marginBottom: '12px' }}>
@@ -789,7 +890,9 @@ export default function Teacher({ onLogout }) {
 
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title={currentTopic.title} onBack={() => { setView('dashboard'); setSummaryError('') }} />
+        {isDemo && <DemoBanner onExit={onLogout} />}
+        {ToastEl}
+        <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title={currentTopic.title} onBack={() => { setView('dashboard'); setSummaryError('') }} isDemo={isDemo} />
         <div style={{ maxWidth: '720px', margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
           <div className="card">
@@ -800,7 +903,7 @@ export default function Teacher({ onLogout }) {
 
             {currentTopic.description && <p style={{ color: '#666', fontSize: '15px', lineHeight: 1.6, marginBottom: '16px' }}>{currentTopic.description}</p>}
 
-            {!(aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey) && (
+            {!isDemo && !(aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey) && (
               <div className="alert alert-warning" style={{ marginBottom: '14px' }}>
                 ⚠️ {aiProvider === 'claude' ? 'Claude' : 'Gemini'} API 키가 없습니다.{' '}
                 <button onClick={goSettings} style={{ background: 'none', border: 'none', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontFamily: 'var(--font-main)', color: '#854d0e' }}>설정에서 입력</button>
@@ -810,7 +913,10 @@ export default function Teacher({ onLogout }) {
 
             {summaryError && <div className="alert alert-error" style={{ marginBottom: '14px' }}>{summaryError}</div>}
 
-            <button className="btn-primary" onClick={() => summarize(currentTopic)} disabled={summarizing || topicSubs.length === 0 || !(aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey)} style={{ width: '100%', fontSize: '16px', padding: '18px' }}>
+            <button className="btn-primary"
+              onClick={() => summarize(currentTopic)}
+              disabled={summarizing || (!isDemo && topicSubs.length === 0) || (!isDemo && !(aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey))}
+              style={{ width: '100%', fontSize: '16px', padding: '18px' }}>
               {summarizing ? <><span className="spinner" /> AI가 요약 중입니다...</> : isCompleted ? '🔄 AI로 다시 요약하기' : '🤖 AI로 의견 요약하기'}
             </button>
           </div>
@@ -822,8 +928,9 @@ export default function Teacher({ onLogout }) {
                 <div>
                   <h3 style={{ fontSize: '18px', fontWeight: 700 }}>AI 요약 결과</h3>
                   <p style={{ fontSize: '12px', color: '#aaa', marginTop: '2px' }}>
-                    {new Date(summary.createdAt).toLocaleString('ko-KR')} · {summary.submissionCount}개 반 의견 기반
+                    {summary.submissionCount}개 반 의견 기반
                     {summary.aiProvider && ` · ${summary.aiProvider === 'gemini' ? 'Gemini' : 'Claude'} 요약`}
+                    {isDemo && ' · 체험용 샘플'}
                   </p>
                 </div>
               </div>
@@ -843,7 +950,6 @@ export default function Teacher({ onLogout }) {
                   <div key={sub.id} className="card" style={{ padding: '20px 24px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
                       <span className="badge badge-sky">{sub.grade}학년 {sub.class}반</span>
-                      <span style={{ fontSize: '12px', color: '#bbb' }}>{new Date(sub.updatedAt || sub.submittedAt).toLocaleString('ko-KR')}{sub.updatedAt ? ' (수정됨)' : ''}</span>
                     </div>
                     <p style={{ fontSize: '15px', lineHeight: 1.75, whiteSpace: 'pre-wrap', color: 'var(--color-text-ink)' }}>{sub.content}</p>
                   </div>
@@ -868,7 +974,9 @@ export default function Teacher({ onLogout }) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-canvas-oat)' }}>
-      <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" />
+      {isDemo && <DemoBanner onExit={onLogout} />}
+      {ToastEl}
+      <AdminHeader section={section} setSection={setSection} onSettings={goSettings} onLogout={onLogout} title="관리자" isDemo={isDemo} />
 
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
@@ -881,7 +989,7 @@ export default function Teacher({ onLogout }) {
           </div>
         )}
 
-        {!loading && !(aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey) && (
+        {!isDemo && !loading && !(aiProvider === 'claude' ? hasClaudeKey : hasGeminiKey) && (
           <div className="alert alert-warning" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>⚠️ {aiProvider === 'claude' ? 'Claude' : 'Gemini'} API 키를 설정해야 요약이 가능합니다</span>
             <button onClick={goSettings} style={{ background: 'none', border: '1.5px solid #92400e', borderRadius: '10px', padding: '4px 12px', color: '#92400e', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-main)' }}>설정하기</button>
