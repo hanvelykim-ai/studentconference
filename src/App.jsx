@@ -43,7 +43,6 @@ export default function App() {
   if (stage === 'login-student') {
     return (
       <Login
-        type="student"
         onLogin={handleLogin}
         onBack={() => setStage('home')}
       />
@@ -53,7 +52,7 @@ export default function App() {
   if (stage === 'login-teacher') {
     return (
       <Login
-        type="teacher"
+        mode="teacher"
         onLogin={handleLogin}
         onBack={() => setStage('home')}
       />
